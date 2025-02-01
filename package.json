@@ -1,0 +1,33 @@
+{
+    "name": "mmm-remoteyoutube",
+    "version": "1.0.0",
+    "description": "A MagicMirror² module to play YouTube videos using notifications as control.",
+    "main": "MMM-RemoteYoutube.js",
+    "scripts": {
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "test": "npm run lint"
+    },
+    "keywords": [
+        "MagicMirror",
+        "module",
+        "YouTube",
+        "YouTube iFrame API"
+    ],
+    "author": "Chloe Altmann",
+    "license": "MIT",
+    "homepage": "https://github.com/DreamyChloe/MMM-HueControl#readme",
+    "repository": {
+        "type": "git",
+      "url": "git+https://github.com/DreamyChloe/MMM-RemoteYoutube.git"
+    },
+    "bugs": {
+      "url": "https://github.com/DreamyChloe/MMM-RemoteYoutube/issues"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.10.0",
+        "@stylistic/eslint-plugin": "^2.7.2",
+        "eslint": "^9.10.0",
+        "globals": "^15.9.0"
+    }
+}

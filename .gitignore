@@ -1,0 +1,9 @@
+# IntelliJ
+.idea/
+
+# Aider
+.aider*
+
+# Node
+node_modules/
+.env
