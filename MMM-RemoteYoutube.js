@@ -80,6 +80,9 @@ Module.register("MMM-RemoteYoutube", {
                 if (this.config.debug) {
                     Log.info(`[${this.name}] Pausing video (was playing)`)
                 }
+
+                this.handleHideWithTimeout()
+                this.handleResetWithTimeout()
             }
         }
     },
