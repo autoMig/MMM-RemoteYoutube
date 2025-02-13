@@ -5,10 +5,10 @@ Module.register("MMM-RemoteYoutube", {
         height: "390",
         playlistIds: [],
         hideDelay: 2 * 60 * 1000,
+        resetDelay: 30 * 60 * 1000,
         volumeFactor: 1,
         showControl: false,
         defaultVolume: 50,
-        resetVolumeOnHide: false,
         enableLoop: true,
         enableShuffle: false,
     },
@@ -16,6 +16,7 @@ Module.register("MMM-RemoteYoutube", {
     playerIsReady: false,
     currentVolume: 0,
     hideTimer: null,
+    resetTimer: null,
     currentPlaylistIndex: 0,
     playlistVideoIndices: {},
 
@@ -64,12 +65,10 @@ Module.register("MMM-RemoteYoutube", {
     },
 
     playVideo: function () {
-        if (this.hidden) {
-            clearTimeout(this.hideTimer)
-            this.show(1000)
-        }
-
         if (this.playerIsReady) {
+            clearTimeout(this.hideTimer)
+            clearTimeout(this.resetTimer)
+
             const playerState = this.player.getPlayerState()
             if (playerState !== YT.PlayerState.PLAYING) {
                 this.player.playVideo()
@@ -96,6 +95,9 @@ Module.register("MMM-RemoteYoutube", {
             } else if (this.config.debug) {
                 Log.info(`[${this.name}] Video is already paused or not playing`)
             }
+
+            this.handleHideWithTimeout()
+            this.handleResetWithTimeout()
         }
     },
 
@@ -137,6 +139,9 @@ Module.register("MMM-RemoteYoutube", {
                 }
                 return
             }
+
+            clearTimeout(this.hideTimer)
+            clearTimeout(this.resetTimer)
 
             // Save the current video index for the current playlist
             const currentPlaylistId = this.config.playlistIds[this.currentPlaylistIndex]
@@ -246,20 +251,36 @@ Module.register("MMM-RemoteYoutube", {
     },
 
     handleVideoStateChange: function (event) {
-        clearTimeout(this.hideTimer)
-
         if (event.data === YT.PlayerState.PLAYING) {
+            if (this.hidden) {
+                this.show(1000)
+            }
+
             const currentPlaylistId = this.config.playlistIds[this.currentPlaylistIndex]
             this.playlistVideoIndices[currentPlaylistId] = this.player.getPlaylistIndex()
-        } else if (event.data === YT.PlayerState.PAUSED) {
-            if (this.config.hideDelay !== 0) {
-                this.hideTimer = setTimeout(() => {
-                    if (this.config.resetVolumeOnHide) {
-                        this.currentVolume = this.config.defaultVolume
-                        this.player.setVolume(this.config.defaultVolume)
-                    }
-                    this.hide(1000)
-                }, this.config.hideDelay)
+        }
+    },
+
+    handleHideWithTimeout: function () {
+        if (this.config.hideDelay !== 0 && !this.hidden) {
+            this.hideTimer = setTimeout(() => {
+                this.hide(1000)
+            }, this.config.hideDelay)
+        }
+    },
+
+    handleResetWithTimeout: function () {
+        if (this.config.resetDelay) {
+            const playerHasPlayingOrPausedVideo = this.playerIsReady
+              && (this.player.getPlayerState() === YT.PlayerState.PLAYING || this.player.getPlayerState() === YT.PlayerState.PAUSED)
+            const playerHasChangedVolume = this.config.defaultVolume !== this.currentVolume
+
+            if (playerHasPlayingOrPausedVideo || playerHasChangedVolume) {
+                this.resetTimer = setTimeout(() => {
+                    this.currentVolume = this.config.defaultVolume
+                    this.player.setVolume(this.config.defaultVolume)
+                    this.player.stopVideo()
+                }, this.config.resetDelay)
             }
         }
     }

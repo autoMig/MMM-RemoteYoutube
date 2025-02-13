@@ -50,10 +50,10 @@ To use this module, add it to the modules array in the `config/config.js` file:
         height: "390",
         playlistIds: ["YOUR_PLAYLIST_ID_1", "YOUR_PLAYLIST_ID_2"],
         hideDelay: 120000,  // 2 minutes
+        resetDelay: 1800000, // 30 minutes
         volumeFactor: 1,
         showControl: false,
         defaultVolume: 50,
-        resetVolumeOnHide: true,
         enableLoop: true,
         enableShuffle: false
     }
@@ -62,19 +62,19 @@ To use this module, add it to the modules array in the `config/config.js` file:
 
 ### Configuration Options
 
-| Option              | Required | Default | Description                                                                             |
-|---------------------|----------|---------|-----------------------------------------------------------------------------------------|
-| `debug`             | No       | false   | Enable debug logging                                                                    |
-| `width`             | No       | "640"   | Width of the YouTube player                                                             |
-| `height`            | No       | "390"   | Height of the YouTube player                                                            |
-| `playlistIds`       | Yes      | []      | Array of YouTube playlist IDs to play                                                   |
-| `hideDelay`         | No       | 120000  | Time in milliseconds to wait before hiding the player when paused (set to 0 to disable) |
-| `volumeFactor`      | No       | 1       | Factor to adjust volume changes (default: 1)                                            |
-| `showControl`       | No       | false   | Whether to show YouTube player controls                                                 |
-| `defaultVolume`     | No       | 50      | Default volume level (0-100)                                                            |
-| `resetVolumeOnHide` | No       | false   | Reset the current volume to default volume upon hide (disabled if hideDelay is 0)       |
-| `enableLoop`        | No       | true    | Whether to loop playlists                                                               |
-| `enableShuffle`     | No       | false   | Whether to shuffle playlists                                                            |
+| Option              | Required | Default | Description                                                                                                            |
+|---------------------|----------|---------|------------------------------------------------------------------------------------------------------------------------|
+| `debug`             | No       | false   | Enable debug logging                                                                                                   |
+| `width`             | No       | "640"   | Width of the YouTube player                                                                                            |
+| `height`            | No       | "390"   | Height of the YouTube player                                                                                           |
+| `playlistIds`       | Yes      | []      | Array of YouTube playlist IDs to play                                                                                  |
+| `hideDelay`         | No       | 120000  | Time in milliseconds to wait before hiding the player when paused (set to 0 to disable)                                |
+| `resetDelay`        | No       | 1800000 | Time in milliseconds to wait before resetting the current volume and video when paused (set to 0 to disable) |
+| `volumeFactor`      | No       | 1       | Factor to adjust volume changes (default: 1)                                                                           |
+| `showControl`       | No       | false   | Whether to show YouTube player controls                                                                                |
+| `defaultVolume`     | No       | 50      | Default volume level (0-100)                                                                                           |
+| `enableLoop`        | No       | true    | Whether to loop playlists                                                                                              |
+| `enableShuffle`     | No       | false   | Whether to shuffle playlists                                                                                           |
 
 ### What 'volumeFactor' is for
 
@@ -88,7 +88,7 @@ This module responds to the following notifications:
 |-------------------------------------|-------------------------------------------------------------------------|
 | `MMM_REMOTEYOUTUBE_PLAY`            | Play or pause the video                                                 |
 | `MMM_REMOTEYOUTUBE_PAUSE`           | Pause the video                                                         |
-| `MMM_REMOTEYOUTUBE_PAUSE`           | Stop the video, reset volume to default and hide the module immediately |
+| `MMM_REMOTEYOUTUBE_STOP`            | Stop the video, reset volume to default and hide the module immediately |
 | `MMM_REMOTEYOUTUBE_NEXT`            | Skip to the next video                                                  |
 | `MMM_REMOTEYOUTUBE_PREVIOUS`        | Go back to the previous video                                           |
 | `MMM_REMOTEYOUTUBE_SWITCH_PLAYLIST` | Switch to the next playlist                                             |
