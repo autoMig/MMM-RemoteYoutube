@@ -48,37 +48,51 @@ To use this module, add it to the modules array in the `config/config.js` file:
         debug: true,
         width: "640",
         height: "390",
-        playlistIds: ["YOUR_PLAYLIST_ID_1", "YOUR_PLAYLIST_ID_2"],
+        playlists: [
+            {
+                playlistId: "YOUR_PLAYLIST_ID_1",
+                shuffle: true,
+                autoSwitchTime: "7:00"
+            },
+            {
+                playlistId: "YOUR_PLAYLIST_ID_2",
+                autoSwitchTime: "19:00"
+            },
+            {
+                playlistId: "YOUR_PLAYLIST_ID_3",
+            }
+        ],
         hideDelay: 120000,  // 2 minutes
         resetDelay: 1800000, // 30 minutes
         volumeFactor: 1,
         showControl: false,
         defaultVolume: 50,
-        enableLoop: true,
-        enableShuffle: false
+        enableLoop: true
     }
 }
 ```
 
 ### Configuration Options
 
-| Option              | Required | Default | Description                                                                                                            |
-|---------------------|----------|---------|------------------------------------------------------------------------------------------------------------------------|
-| `debug`             | No       | false   | Enable debug logging                                                                                                   |
-| `width`             | No       | "640"   | Width of the YouTube player                                                                                            |
-| `height`            | No       | "390"   | Height of the YouTube player                                                                                           |
-| `playlistIds`       | Yes      | []      | Array of YouTube playlist IDs to play                                                                                  |
-| `hideDelay`         | No       | 120000  | Time in milliseconds to wait before hiding the player when paused (set to 0 to disable)                                |
-| `resetDelay`        | No       | 1800000 | Time in milliseconds to wait before resetting the current volume and video when paused (set to 0 to disable) |
-| `volumeFactor`      | No       | 1       | Factor to adjust volume changes (default: 1)                                                                           |
-| `showControl`       | No       | false   | Whether to show YouTube player controls                                                                                |
-| `defaultVolume`     | No       | 50      | Default volume level (0-100)                                                                                           |
-| `enableLoop`        | No       | true    | Whether to loop playlists                                                                                              |
-| `enableShuffle`     | No       | false   | Whether to shuffle playlists                                                                                           |
+| Option          | Required | Default | Description                                                                                                  |
+|-----------------|----------|---------|--------------------------------------------------------------------------------------------------------------|
+| `debug`         | No       | false   | Enable debug logging                                                                                         |
+| `width`         | No       | "640"   | Width of the YouTube player                                                                                  |
+| `height`        | No       | "390"   | Height of the YouTube player                                                                                 |
+| `playlists`     | Yes      | []      | Array of playlist objects containing playlistId, shuffle, and autoSwitchTime                                 |
+| `hideDelay`     | No       | 120000  | Time in milliseconds to wait before hiding the player when paused (set to 0 to disable)                      |
+| `resetDelay`    | No       | 1800000 | Time in milliseconds to wait before resetting the current volume and video when paused (set to 0 to disable) |
+| `volumeFactor`  | No       | 1       | Factor to adjust volume changes (default: 1)                                                                 |
+| `showControl`   | No       | false   | Whether to show YouTube player controls                                                                      |
+| `defaultVolume` | No       | 50      | Default volume level (0-100)                                                                                 |
+| `enableLoop`    | No       | true    | Whether to loop playlists                                                                                    |
 
-### What 'volumeFactor' is for
-
-I created this module with a Hue Tap Dial as the controller in mind. The value range that can be emitted from the API is much higher (~15-600) than the accepted value range of the YouTube iFrame API (0-100). For example, by using a factor of 5, we can decrease the value per step from 15 to 3.
+### Playlist Configuration Options
+| Option           | Required | Description                                                                                                                    |
+|------------------|----------|--------------------------------------------------------------------------------------------------------------------------------|
+| `playlistId`     | Yes      | ID of the YouTube playlist                                                                                                     |
+| `shuffle`        | No       | Whether to shuffle the playlist (default is false)                                                                             |
+| `autoSwitchTime` | No       | Time of day to automatically switch to this playlist (format: "HH:MM"). Only applies when the player is not currently playing. |
 
 ## Notifications
 
@@ -95,8 +109,18 @@ This module responds to the following notifications:
 | `MMM_REMOTEYOUTUBE_INCREASE_VOLUME` | Increase the volume (payload: number or object with 'value' property)   |
 | `MMM_REMOTEYOUTUBE_DECREASE_VOLUME` | Decrease the volume (payload: number or object with 'value' property)   |
 
-## Why does it show "This video is unavailable"?
+## FAQ
+### What 'volumeFactor' is for
+
+I created this module with a Hue Tap Dial as the controller in mind. The value range that can be emitted from the API is much higher (~15-600) than the accepted value range of the YouTube iFrame API (0-100). For example, by using a factor of 5, we can decrease the value per step from 15 to 3.
+
+### Why does it show "This video is unavailable"?
+
 The YouTube API can't access playlists that are private. Make sure that the desired playlist is either public or unlisted.
+
+### Why is the video quality or performance poor?
+
+Performance issues with YouTube on Chromium, especially on embedded systems, are a known problem. Since 2024, the YouTube iFrame API no longer allows manual adjustments to video quality, limiting our ability to improve this aspect. Additionally, issues such as lags and framerate drops may also stem from hardware limitations and connectivity problems. For example, switching to a 5GHz WiFi network on my Raspberry Pi 4B has shown to significantly improve performance, with videos running smoothly on 320px width for extended periods.
 
 ## Contributing
 

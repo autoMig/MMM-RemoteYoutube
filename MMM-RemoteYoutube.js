@@ -3,14 +3,13 @@ Module.register("MMM-RemoteYoutube", {
         debug: false,
         width: "640",
         height: "390",
-        playlistIds: [],
+        playlists: [],
         hideDelay: 2 * 60 * 1000,
         resetDelay: 30 * 60 * 1000,
         volumeFactor: 1,
         showControl: false,
         defaultVolume: 50,
         enableLoop: true,
-        enableShuffle: false,
     },
 
     playerIsReady: false,
@@ -22,10 +21,11 @@ Module.register("MMM-RemoteYoutube", {
 
     start: function () {
         Log.info("Starting module: " + this.name)
-        if (this.config.playlistIds.length > 0) {
+        if (this.config.playlists.length > 0) {
             this.loadYouTubeIframeAPI()
+            this.scheduleAutoSwitches()
         } else {
-            Log.error(`[${this.name}] Can not start without at least one playlist.`)
+            Log.error(`[${this.name}] Cannot start without at least one playlist.`)
         }
     },
 
@@ -134,9 +134,9 @@ Module.register("MMM-RemoteYoutube", {
         }
     },
 
-    switchPlaylist: function () {
+    switchPlaylist: function (playlistIndex = (this.currentPlaylistIndex + 1) % this.config.playlists.length) {
         if (this.playerIsReady) {
-            if (this.config.playlistIds.length === 0) {
+            if (this.config.playlists.length === 0) {
                 if (this.config.debug) {
                     Log.warn(`[${this.name}] No playlists configured`)
                 }
@@ -146,24 +146,25 @@ Module.register("MMM-RemoteYoutube", {
             clearTimeout(this.hideTimer)
             clearTimeout(this.resetTimer)
 
+            // Get the new playlist config
+            const newPlaylistConfig = this.config.playlists[playlistIndex]
+
             // Save the current video index for the current playlist
-            const currentPlaylistId = this.config.playlistIds[this.currentPlaylistIndex]
+            const currentPlaylistId = this.config.playlists[this.currentPlaylistIndex].playlistId
             this.playlistVideoIndices[currentPlaylistId] = this.player.getPlaylistIndex()
 
-            const newPlaylistIndex = (this.currentPlaylistIndex + 1) % this.config.playlistIds.length
-            const newPlaylistId = this.config.playlistIds[newPlaylistIndex]
-
             this.player.stopVideo()
-            const startIndex = this.playlistVideoIndices[newPlaylistId] || 0
+            const startIndex = this.playlistVideoIndices[newPlaylistConfig.playlistId] || 0
+            const shuffle = newPlaylistConfig.shuffle !== undefined ? newPlaylistConfig.shuffle : false
             this.player.loadPlaylist({
                 listType: "playlist",
-                list: newPlaylistId,
+                list: newPlaylistConfig.playlistId,
                 index: startIndex
             })
-            this.player.setShuffle(this.config.enableShuffle)
-            this.currentPlaylistIndex = newPlaylistIndex
+            this.player.setShuffle(shuffle)
+            this.currentPlaylistIndex = playlistIndex
             if (this.config.debug) {
-                Log.info(`[${this.name}] Switched to playlist: ${newPlaylistId}`)
+                Log.info(`[${this.name}] Switched to playlist: ${newPlaylistConfig.playlistId}`)
             }
         }
     },
@@ -226,25 +227,27 @@ Module.register("MMM-RemoteYoutube", {
     },
 
     onYouTubeIframeAPIReady: function () {
+        const initialPlaylistConfig = this.config.playlists[0]
+
         this.player = new YT.Player("youtube-player", {
             width: this.config.width,
             height: this.config.height,
             playerVars: {
                 listType: "playlist",
-                list: this.config.playlistIds[0],
+                list: initialPlaylistConfig.playlistId,
                 controls: this.config.showControl,
             },
             events: {
-                onReady: this.onPlayerReady.bind(this),
+                onReady: () => this.onPlayerReady(initialPlaylistConfig),
                 onStateChange: this.handleVideoStateChange.bind(this)
             }
         })
     },
 
-    onPlayerReady: function () {
+    onPlayerReady: function (initialPlaylistConfig) {
         this.playerIsReady = true
         this.player.setLoop(this.config.enableLoop)
-        this.player.setShuffle(this.config.enableShuffle)
+        this.player.setShuffle(initialPlaylistConfig.shuffle !== undefined ? initialPlaylistConfig.shuffle : false)
         this.player.setVolume(this.config.defaultVolume)
         this.currentVolume = this.config.defaultVolume
 
@@ -259,7 +262,7 @@ Module.register("MMM-RemoteYoutube", {
                 this.show(1000)
             }
 
-            const currentPlaylistId = this.config.playlistIds[this.currentPlaylistIndex]
+            const currentPlaylistId = this.config.playlists[this.currentPlaylistIndex].playlistId
             this.playlistVideoIndices[currentPlaylistId] = this.player.getPlaylistIndex()
         }
     },
@@ -286,5 +289,36 @@ Module.register("MMM-RemoteYoutube", {
                 }, this.config.resetDelay)
             }
         }
+    },
+
+    scheduleAutoSwitches: function () {
+        this.config.playlists.forEach((playlistConfig, index) => {
+            if (playlistConfig.autoSwitchTime) {
+                this.scheduleAutoSwitch(playlistConfig.autoSwitchTime, index)
+            }
+        })
+    },
+
+    scheduleAutoSwitch: function (time, playlistIndex) {
+        const now = new Date()
+        const [hours, minutes] = time.split(":").map(Number)
+        const switchTime = new Date()
+        switchTime.setHours(hours, minutes, 0, 0)
+
+        if (switchTime <= now) {
+            switchTime.setDate(switchTime.getDate() + 1)
+        }
+
+        const timeUntilSwitch = switchTime - now
+        if (this.config.debug) {
+            Log.info(`[${this.name}] Scheduling autoswitch for playlist ${playlistIndex} at ${time} (${timeUntilSwitch}ms from now)`)
+        }
+
+        setTimeout(() => {
+            if (this.playerIsReady && this.player.getPlayerState() !== YT.PlayerState.PLAYING) {
+                this.switchPlaylist(playlistIndex)
+            }
+            this.scheduleAutoSwitch(time, playlistIndex)
+        }, timeUntilSwitch)
     }
 })
