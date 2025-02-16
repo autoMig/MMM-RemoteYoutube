@@ -19,6 +19,8 @@ Module.register("MMM-RemoteYoutube", {
     currentPlaylistIndex: 0,
     playlistVideoIndices: {},
 
+    LOCK_STRING: "MMM_REMOTEYOUTUBE",
+
     start: function () {
         Log.info("Starting module: " + this.name)
         if (this.config.playlists.length > 0) {
@@ -109,7 +111,7 @@ Module.register("MMM-RemoteYoutube", {
             this.player.stopVideo()
             this.currentVolume = this.config.defaultVolume
             this.player.setVolume(this.config.defaultVolume)
-            this.hide(1000)
+            this.hide(1000, { lockString: this.LOCK_STRING })
             if (this.config.debug) {
                 Log.info(`[${this.name}] Stop video and hide player`)
             }
@@ -134,7 +136,10 @@ Module.register("MMM-RemoteYoutube", {
         }
     },
 
-    switchPlaylist: function (playlistIndex = (this.currentPlaylistIndex + 1) % this.config.playlists.length) {
+    switchPlaylist: function (
+        playlistIndex = (this.currentPlaylistIndex + 1) % this.config.playlists.length,
+        cue = false
+    ) {
         if (this.playerIsReady) {
             if (this.config.playlists.length === 0) {
                 if (this.config.debug) {
@@ -156,12 +161,23 @@ Module.register("MMM-RemoteYoutube", {
             this.player.stopVideo()
             const startIndex = this.playlistVideoIndices[newPlaylistConfig.playlistId] || 0
             const shuffle = newPlaylistConfig.shuffle !== undefined ? newPlaylistConfig.shuffle : false
-            this.player.loadPlaylist({
-                listType: "playlist",
-                list: newPlaylistConfig.playlistId,
-                index: startIndex
-            })
+
+            if (cue) {
+                this.player.cuePlaylist({
+                    listType: "playlist",
+                    list: newPlaylistConfig.playlistId,
+                    index: startIndex
+                })
+            } else {
+                this.player.loadPlaylist({
+                    listType: "playlist",
+                    list: newPlaylistConfig.playlistId,
+                    index: startIndex
+                })
+            }
+
             this.player.setShuffle(shuffle)
+            this.player.setLoop(this.config.enableLoop)
             this.currentPlaylistIndex = playlistIndex
             if (this.config.debug) {
                 Log.info(`[${this.name}] Switched to playlist: ${newPlaylistConfig.playlistId}`)
@@ -259,7 +275,7 @@ Module.register("MMM-RemoteYoutube", {
     handleVideoStateChange: function (event) {
         if (event.data === YT.PlayerState.PLAYING) {
             if (this.hidden) {
-                this.show(1000)
+                this.show(500, { lockString: this.LOCK_STRING })
             }
 
             const currentPlaylistId = this.config.playlists[this.currentPlaylistIndex].playlistId
@@ -270,7 +286,7 @@ Module.register("MMM-RemoteYoutube", {
     handleHideWithTimeout: function () {
         if (this.config.hideDelay !== 0 && !this.hidden) {
             this.hideTimer = setTimeout(() => {
-                this.hide(1000)
+                this.hide(500, { lockString: this.LOCK_STRING })
             }, this.config.hideDelay)
         }
     },
@@ -316,7 +332,7 @@ Module.register("MMM-RemoteYoutube", {
 
         setTimeout(() => {
             if (this.playerIsReady && this.player.getPlayerState() !== YT.PlayerState.PLAYING) {
-                this.switchPlaylist(playlistIndex)
+                this.switchPlaylist(playlistIndex, true)
             }
             this.scheduleAutoSwitch(time, playlistIndex)
         }, timeUntilSwitch)
