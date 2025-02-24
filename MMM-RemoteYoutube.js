@@ -92,7 +92,7 @@ Module.register("MMM-RemoteYoutube", {
     pauseVideo: function () {
         if (this.playerIsReady) {
             const playerState = this.player.getPlayerState()
-            if (playerState === YT.PlayerState.PLAYING) {
+            if (playerState === YT.PlayerState.PLAYING || playerState === YT.PlayerState.BUFFERING) {
                 this.player.pauseVideo()
                 if (this.config.debug) {
                     Log.info(`[${this.name}] Pausing video`)
