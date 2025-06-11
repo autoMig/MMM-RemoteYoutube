@@ -105,7 +105,11 @@ This module responds to the following notifications:
 | `MMM_REMOTEYOUTUBE_STOP`            | Stop the video, reset volume to default and hide the module immediately |
 | `MMM_REMOTEYOUTUBE_NEXT`            | Skip to the next video                                                  |
 | `MMM_REMOTEYOUTUBE_PREVIOUS`        | Go back to the previous video                                           |
+<<<<<<< Updated upstream
 | `MMM_REMOTEYOUTUBE_SWITCH_PLAYLIST` | Switch to the next playlist                                             |
+=======
+| `MMM_REMOTEYOUTUBE_SWITCH_PLAYLIST` | Change to a different playlist based on the provided action (payload: number (index of playlist from config) or string with value of "PREV" or "NEXT" |
+>>>>>>> Stashed changes
 | `MMM_REMOTEYOUTUBE_INCREASE_VOLUME` | Increase the volume (payload: number or object with 'value' property)   |
 | `MMM_REMOTEYOUTUBE_DECREASE_VOLUME` | Decrease the volume (payload: number or object with 'value' property)   |
 

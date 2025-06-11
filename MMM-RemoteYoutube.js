@@ -55,7 +55,7 @@ Module.register("MMM-RemoteYoutube", {
                 this.previousVideo()
                 break
             case "MMM_REMOTEYOUTUBE_SWITCH_PLAYLIST":
-                this.switchPlaylist()
+                this.switchPlaylist(payload)
                 break
             case "MMM_REMOTEYOUTUBE_INCREASE_VOLUME":
                 this.increaseVolume(payload)
@@ -136,52 +136,94 @@ Module.register("MMM-RemoteYoutube", {
         }
     },
 
-    switchPlaylist: function (
-        playlistIndex = (this.currentPlaylistIndex + 1) % this.config.playlists.length,
-        cue = false
-    ) {
-        if (this.playerIsReady) {
-            if (this.config.playlists.length === 0) {
+    switchPlaylist: function (action = "NEXT", cue = false){
+        if (!this.playerIsReady || this.config.playlists.length === 0) {
+            if (this.config.debug) {
+                Log.warn(`[${this.name}] No playlists configured or player not ready`)
+            }
+            return
+        }
+
+        clearTimeout(this.hideTimer)
+        clearTimeout(this.resetTimer)
+
+        let playlistIndex
+
+        if (typeof action === "number"){
+            //action is a number
+            if (this.config.debug) {
+                Log.info(`[${this.name}] Moving to playlist number: ${action}`)
+            }
+            playlistIndex = action
+        } else if(!isNaN(action)) {
+            //action is a string that can be converted to a number
+            if (this.config.debug) {
+                Log.info(`[${this.name}] Moving to parsed playlist number: ${action}`)
+            }            
+            playlistIndex = parseInt(action, 10)
+        } else if (typeof action === "string"){
+            switch (action.toUpperCase()){
+            case "NEXT":
                 if (this.config.debug) {
-                    Log.warn(`[${this.name}] No playlists configured`)
+                    Log.info(`[${this.name}] Moving to next playlist`)
+                }
+                playlistIndex = (this.currentPlaylistIndex + 1) % this.config.playlists.length                    
+                break
+            case "PREV":
+                if (this.config.debug) {
+                    Log.info(`[${this.name}] Moving to prev playlist`)
+                }
+                playlistIndex = (this.currentPlaylistIndex - 1 + this.config.playlists.length) % this.config.playlists.length                    
+                break
+            default:
+                if (this.config.debug) {
+                    Log.warn(`[${this.name}] Invalid action string: ${action}`)
                 }
                 return
             }
-
-            clearTimeout(this.hideTimer)
-            clearTimeout(this.resetTimer)
-
-            // Get the new playlist config
-            const newPlaylistConfig = this.config.playlists[playlistIndex]
-
-            // Save the current video index for the current playlist
-            const currentPlaylistId = this.config.playlists[this.currentPlaylistIndex].playlistId
-            this.playlistVideoIndices[currentPlaylistId] = this.player.getPlaylistIndex()
-
-            this.player.stopVideo()
-            const startIndex = this.playlistVideoIndices[newPlaylistConfig.playlistId] || 0
-            const shuffle = newPlaylistConfig.shuffle !== undefined ? newPlaylistConfig.shuffle : false
-
-            if (cue) {
-                this.player.cuePlaylist({
-                    listType: "playlist",
-                    list: newPlaylistConfig.playlistId,
-                    index: startIndex
-                })
-            } else {
-                this.player.loadPlaylist({
-                    listType: "playlist",
-                    list: newPlaylistConfig.playlistId,
-                    index: startIndex
-                })
-            }
-
-            this.player.setShuffle(shuffle)
-            this.player.setLoop(this.config.enableLoop)
-            this.currentPlaylistIndex = playlistIndex
+        } else {
             if (this.config.debug) {
-                Log.info(`[${this.name}] Switched to playlist: ${newPlaylistConfig.playlistId}`)
+                Log.warn(`[${this.name}] Unrecognised action type: ${action}`)
             }
+            return
+        }
+
+        // Get the new playlist config
+        const newPlaylistConfig = this.config.playlists[playlistIndex]
+        if (!newPlaylistConfig) {
+            if (this.config.debug) {
+                Log.warn(`[${this.name}] Playlist index out of range: ${playlistIndex}`)
+            }
+            return
+        }
+
+        // Save the current video index for the current playlist
+        const currentPlaylistId = this.config.playlists[this.currentPlaylistIndex].playlistId
+        this.playlistVideoIndices[currentPlaylistId] = this.player.getPlaylistIndex()            
+
+        this.player.stopVideo()
+        const startIndex = this.playlistVideoIndices[newPlaylistConfig.playlistId] || 0
+        const shuffle = newPlaylistConfig.shuffle !== undefined ? newPlaylistConfig.shuffle : false
+
+        if (cue) {
+            this.player.cuePlaylist({
+                listType: "playlist",
+                list: newPlaylistConfig.playlistId,
+                index: startIndex
+            })
+        } else {
+            this.player.loadPlaylist({
+                listType: "playlist",
+                list: newPlaylistConfig.playlistId,
+                index: startIndex
+            })
+        }
+
+        this.player.setShuffle(shuffle)
+        this.player.setLoop(this.config.enableLoop)
+        this.currentPlaylistIndex = playlistIndex
+        if (this.config.debug) {
+            Log.info(`[${this.name}] Switched to playlist: ${newPlaylistConfig.playlistId} (index: ${playlistIndex})`)
         }
     },
 
